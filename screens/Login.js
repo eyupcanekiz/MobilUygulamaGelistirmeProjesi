@@ -1,7 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
+import { View, TextInput, Button, StyleSheet, Alert } from "react-native";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { auth } from "../firebase";
+
+const db = getFirestore();
 
 const Login = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -9,10 +12,26 @@ const Login = ({ navigation }) => {
 
   const handleLogin = async () => {
     try {
+      // Kullanıcıyı Firebase Authentication ile giriş yaptırıyoruz
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      Alert.alert("Giriş Başarılı!", `Hoş geldin ${userCredential.user.email}`);
-      console.log("User logged in:", userCredential.user);
-      // Burada ana sayfaya yönlendirme yapabilirsiniz
+      const userId = userCredential.user.uid;
+
+      // Kullanıcının Firestore'daki rolünü alıyoruz
+      const userDoc = await getDoc(doc(db, "users", userId));
+      if (userDoc.exists()) {
+        const userRole = userDoc.data()?.role;
+
+        // Kullanıcı rolüne göre yönlendirme yapıyoruz
+        if (userRole === "admin") {
+          navigation.navigate("AdminDashboard");
+        } else if (userRole === "user") {
+          navigation.navigate("UserDashboard");
+        } else {
+          Alert.alert("Hata", "Kullanıcı rolü tanımlı değil.");
+        }
+      } else {
+        Alert.alert("Hata", "Kullanıcı Firestore'da bulunamadı.");
+      }
     } catch (error) {
       Alert.alert("Giriş Hatası", error.message);
     }
@@ -20,7 +39,6 @@ const Login = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Giriş Yap</Text>
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -43,8 +61,7 @@ const Login = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", padding: 20 },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20, textAlign: "center" },
-  input: { borderWidth: 1, borderColor: "#ccc", padding: 10, marginBottom: 20, borderRadius: 5 },
+  input: { borderWidth: 1, borderColor: "#ccc", padding: 10, marginBottom: 10, borderRadius: 5 },
 });
 
 export default Login;
