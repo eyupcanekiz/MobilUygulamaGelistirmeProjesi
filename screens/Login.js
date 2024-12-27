@@ -12,16 +12,19 @@ const Login = ({ navigation }) => {
 
   const handleLogin = async () => {
     try {
-      // Kullanıcıyı Firebase Authentication ile giriş yaptırıyoruz
+      console.log("Giriş işlemi başlıyor...");
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const userId = userCredential.user.uid;
 
-      // Kullanıcının Firestore'daki rolünü alıyoruz
+      console.log("Giriş başarılı. Kullanıcı UID:", userId);
+
+      // Kullanıcının Firestore'daki rolünü al
       const userDoc = await getDoc(doc(db, "users", userId));
       if (userDoc.exists()) {
-        const userRole = userDoc.data()?.role;
+        const userRole = userDoc.data().role;
+        console.log("Kullanıcı rolü:", userRole);
 
-        // Kullanıcı rolüne göre yönlendirme yapıyoruz
+        // Role göre yönlendirme yap
         if (userRole === "admin") {
           navigation.navigate("AdminDashboard");
         } else if (userRole === "user") {
@@ -30,9 +33,10 @@ const Login = ({ navigation }) => {
           Alert.alert("Hata", "Kullanıcı rolü tanımlı değil.");
         }
       } else {
-        Alert.alert("Hata", "Kullanıcı Firestore'da bulunamadı.");
+        Alert.alert("Hata", "Kullanıcı bulunamadı.");
       }
     } catch (error) {
+      console.error("Giriş Hatası:", error.message);
       Alert.alert("Giriş Hatası", error.message);
     }
   };
