@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, TextInput, Button, StyleSheet, Alert } from "react-native";
+import { View, TextInput, Button, Alert, StyleSheet } from "react-native";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { auth } from "../firebase";
@@ -18,13 +18,13 @@ const Login = ({ navigation }) => {
 
       console.log("Giriş başarılı. Kullanıcı UID:", userId);
 
-      // Kullanıcının Firestore'daki rolünü al
+      // Firestore'dan kullanıcı bilgilerini al
       const userDoc = await getDoc(doc(db, "users", userId));
       if (userDoc.exists()) {
         const userRole = userDoc.data().role;
         console.log("Kullanıcı rolü:", userRole);
 
-        // Role göre yönlendirme yap
+        // Role göre yönlendirme
         if (userRole === "admin") {
           navigation.navigate("AdminDashboard");
         } else if (userRole === "user") {
@@ -33,7 +33,7 @@ const Login = ({ navigation }) => {
           Alert.alert("Hata", "Kullanıcı rolü tanımlı değil.");
         }
       } else {
-        Alert.alert("Hata", "Kullanıcı bulunamadı.");
+        Alert.alert("Hata", "Kullanıcı Firestore'da bulunamadı.");
       }
     } catch (error) {
       console.error("Giriş Hatası:", error.message);

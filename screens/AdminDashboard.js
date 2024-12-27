@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, TextInput, Button, Alert, StyleSheet } from "react-native";
 import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { auth } from "../firebase";
 
 const db = getFirestore();
 
@@ -12,9 +13,21 @@ const AdminDashboard = () => {
 
   const handleAddGuide = async () => {
     try {
-      await addDoc(collection(db, "Guides"), { ageGroup, type, min: parseFloat(min), max: parseFloat(max) });
+      if (!auth.currentUser) {
+        Alert.alert("Hata", "Oturum açmamış kullanıcı.");
+        return;
+      }
+
+      await addDoc(collection(db, "Guides"), {
+        ageGroup,
+        type,
+        min: parseFloat(min),
+        max: parseFloat(max),
+        createdBy: auth.currentUser.uid,
+      });
       Alert.alert("Başarılı", "Kılavuz eklendi.");
     } catch (error) {
+      console.error("Kılavuz ekleme hatası:", error.message);
       Alert.alert("Hata", error.message);
     }
   };

@@ -15,24 +15,25 @@ const Register = ({ navigation }) => {
       console.log("Kayıt işlemi başlıyor...");
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const userId = userCredential.user.uid;
-  
-      console.log("Kullanıcı başarıyla oluşturuldu. UID:", userId);
-  
-      // Firestore'a kullanıcı ekleme
+
+      console.log("Kayıt başarılı. Kullanıcı UID:", userId);
+
+      // Eğer email "eyupcan@gmail.com" ise role "admin", aksi takdirde "user" yap
+      const role = email === "eyupcan@gmail.com" ? "admin" : "user";
+
+      // Firestore'da `users` koleksiyonuna kullanıcı ekleme
       await setDoc(doc(db, "users", userId), {
         email: email,
-        role: "user", // Varsayılan rol
+        role: role,
       });
-  
-      console.log("Kullanıcı Firestore'a eklendi.");
+
       Alert.alert("Kayıt Başarılı!", "Şimdi giriş yapabilirsiniz.");
       navigation.navigate("Login");
     } catch (error) {
       console.error("Kayıt Hatası:", error.message);
-      Alert.alert("Hata", error.message);
+      Alert.alert("Kayıt Hatası", error.message);
     }
   };
-  
 
   return (
     <View style={styles.container}>
