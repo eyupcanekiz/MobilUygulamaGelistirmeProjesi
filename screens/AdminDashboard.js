@@ -1,124 +1,76 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  Button,
-  TextInput,
-  StyleSheet,
-  FlatList,
-  Alert,
-  Picker, // Dropdown için
-} from "react-native";
+import { View, Text, TextInput, Button, FlatList, StyleSheet, Picker, Alert } from "react-native";
 import { getFirestore, collection, addDoc, getDocs, query, where } from "firebase/firestore";
 
 const db = getFirestore();
 
 const AdminDashboard = () => {
-  const [guideName, setGuideName] = useState("");
+  const [selectedGuide, setSelectedGuide] = useState("Kılavuz 1"); // Varsayılan kılavuz seçimi
   const [ageGroup, setAgeGroup] = useState("");
-  const [IgG, setIgG] = useState("");
-  const [IgA, setIgA] = useState("");
-  const [IgM, setIgM] = useState("");
-  const [selectedGuide, setSelectedGuide] = useState(""); // Seçilen kılavuz
-  const [guides, setGuides] = useState([]);
+  const [type, setType] = useState("");
+  const [min, setMin] = useState("");
+  const [max, setMax] = useState("");
+  const [guideData, setGuideData] = useState([]);
 
-  // Kılavuz ekleme işlevi
-  const addGuide = async () => {
+  // Yeni kılavuz ekleme
+  const handleAddGuide = async () => {
     try {
       await addDoc(collection(db, "Guides"), {
-        guideName,
         ageGroup,
-        IgG,
-        IgA,
-        IgM,
+        type,
+        min: parseFloat(min),
+        max: parseFloat(max),
+        guideName: selectedGuide,
       });
-      Alert.alert("Başarılı", "Kılavuz eklendi.");
-      fetchGuides();
+      Alert.alert("Başarılı", `${selectedGuide} kılavuzuna veri eklendi.`);
     } catch (error) {
       Alert.alert("Hata", error.message);
     }
   };
 
-  // Belirli bir kılavuzun verilerini getirme işlevi
-  const fetchGuides = async () => {
+  // Seçilen kılavuz verilerini getirme
+  const handleFetchGuideData = async () => {
     try {
-      if (!selectedGuide) {
-        Alert.alert("Uyarı", "Lütfen bir kılavuz seçin!");
-        return;
-      }
-
       const q = query(collection(db, "Guides"), where("guideName", "==", selectedGuide));
-      const snapshot = await getDocs(q);
-      const guidesList = snapshot.docs.map((doc) => doc.data());
-      setGuides(guidesList);
+      const querySnapshot = await getDocs(q);
+      const data = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setGuideData(data);
+      Alert.alert("Başarılı", `${selectedGuide} kılavuzundan veriler getirildi.`);
     } catch (error) {
-      Alert.alert("Hata", error.message);
+      Alert.alert("Hata", "Kılavuz verileri getirilirken bir sorun oluştu: " + error.message);
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Kılavuz Seçimi */}
-      <Text style={styles.label}>Kılavuz Seçimi</Text>
-      <Picker
-        selectedValue={selectedGuide}
-        onValueChange={(itemValue) => setSelectedGuide(itemValue)}
-        style={styles.picker}
-      >
-        <Picker.Item label="Kılavuz Seçin" value="" />
+      <Text style={styles.title}>Kılavuz Yönetimi</Text>
+      <Picker selectedValue={selectedGuide} onValueChange={(itemValue) => setSelectedGuide(itemValue)} style={styles.input}>
         <Picker.Item label="Kılavuz 1" value="Kılavuz 1" />
         <Picker.Item label="Kılavuz 2" value="Kılavuz 2" />
         <Picker.Item label="Kılavuz 3" value="Kılavuz 3" />
         <Picker.Item label="Kılavuz 4" value="Kılavuz 4" />
         <Picker.Item label="Kılavuz 5" value="Kılavuz 5" />
       </Picker>
+      <TextInput placeholder="Yaş Grubu" value={ageGroup} onChangeText={setAgeGroup} style={styles.input} />
+      <TextInput placeholder="Tip (IgA, IgM...)" value={type} onChangeText={setType} style={styles.input} />
+      <TextInput placeholder="Min Değer" value={min} onChangeText={setMin} style={styles.input} keyboardType="numeric" />
+      <TextInput placeholder="Max Değer" value={max} onChangeText={setMax} style={styles.input} keyboardType="numeric" />
+      <Button title="Kılavuz Verisi Ekle" onPress={handleAddGuide} />
 
-      {/* Kılavuz Ekleme */}
-      <Text style={styles.label}>Yeni Kılavuz Ekle</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Kılavuz Adı"
-        value={guideName}
-        onChangeText={setGuideName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Yaş Grubu (ör. 0-5 months)"
-        value={ageGroup}
-        onChangeText={setAgeGroup}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="IgG Aralığı (ör. 1.0-1.34)"
-        value={IgG}
-        onChangeText={setIgG}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="IgA Aralığı (ör. 0.07-0.37)"
-        value={IgA}
-        onChangeText={setIgA}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="IgM Aralığı (ör. 0.26-1.22)"
-        value={IgM}
-        onChangeText={setIgM}
-      />
-      <Button title="Kılavuz Ekle" onPress={addGuide} />
-
-      {/* Seçilen Kılavuzun Verilerini Getirme */}
-      <Button title="Seçilen Kılavuzu Getir" onPress={fetchGuides} />
-
-      {/* Kılavuz Listeleme */}
+      <Text style={styles.title}>Seçilen Kılavuz Verileri</Text>
+      <Button title="Kılavuz Verilerini Getir" onPress={handleFetchGuideData} />
       <FlatList
-        data={guides}
-        keyExtractor={(item, index) => index.toString()}
+        data={guideData}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.guideItem}>
-            <Text>Kılavuz: {item.guideName}</Text>
+          <View style={styles.reportCard}>
             <Text>Yaş Grubu: {item.ageGroup}</Text>
-            <Text>IgG: {item.IgG}, IgA: {item.IgA}, IgM: {item.IgM}</Text>
+            <Text>Tip: {item.type}</Text>
+            <Text>Min: {item.min}</Text>
+            <Text>Max: {item.max}</Text>
           </View>
         )}
       />
@@ -128,10 +80,9 @@ const AdminDashboard = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
-  input: { borderWidth: 1, marginBottom: 10, padding: 8, borderRadius: 5 },
-  label: { fontSize: 16, marginVertical: 10, fontWeight: "bold" },
-  picker: { height: 50, width: "100%", marginBottom: 20, borderWidth: 1 },
-  guideItem: { marginVertical: 10, padding: 10, borderWidth: 1, borderRadius: 5, backgroundColor: "#f9f9f9" },
+  title: { fontSize: 20, fontWeight: "bold", marginVertical: 10 },
+  input: { borderWidth: 1, borderColor: "#ccc", padding: 10, marginBottom: 10, borderRadius: 5 },
+  reportCard: { padding: 10, marginVertical: 5, backgroundColor: "#f9f9f9", borderRadius: 5 },
 });
 
 export default AdminDashboard;
